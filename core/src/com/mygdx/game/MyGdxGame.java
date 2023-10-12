@@ -1,15 +1,14 @@
 package com.mygdx.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.maps.MapGroupLayer;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 
 public class MyGdxGame extends ApplicationAdapter {
 	SpriteBatch batch;
-	Texture img;
+	Texture tBackground;
 	private float posX, posY;
 	Texture tWalkingCharacter;
 	private static final float FRAME_TIME = 1/8f;
@@ -27,17 +26,37 @@ public class MyGdxGame extends ApplicationAdapter {
 		up,
 		down
 	}
-
 	dir d = dir.left;
 	TextureRegion currentFrame;
+	enum Screen {
+		TITLE, MAIN_GAME, GAME_OVER;
+	}
+	Screen currentScreen = Screen.TITLE;
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
-		img = new Texture("background.png");
-
+		tBackground = new Texture("background.png");
 		tWalkingCharacter = new Texture("WalkingSprite.png");
-		//sCharacter = new Sprite(tWalkingCharacter);
+
+		Gdx.input.setInputProcessor(new InputAdapter() {
+			@Override
+			public boolean keyDown (int keyCode) {
+
+				if(currentScreen == Screen.TITLE && keyCode == Input.Keys.SPACE){
+					currentScreen = Screen.MAIN_GAME;
+				}
+				else if(currentScreen == Screen.GAME_OVER && keyCode == Input.Keys.ENTER){
+					currentScreen = Screen.TITLE;
+				}
+				else if( currentScreen == Screen.MAIN_GAME && keyCode == Input.Keys.ESCAPE )
+				{
+					currentScreen = Screen.TITLE;
+				}
+
+				return true;
+			}
+		});
 
 		TextureRegion[][] tmp = TextureRegion.split(tWalkingCharacter,
 				tWalkingCharacter.getWidth() / 3,
@@ -80,44 +99,59 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		this.move();
-		elapsed_time += Gdx.graphics.getDeltaTime();
 
-		if ( walking )
+		if ( currentScreen == Screen.MAIN_GAME )
 		{
-			switch (d)
+			this.move();
+			elapsed_time += Gdx.graphics.getDeltaTime();
+
+			if ( walking )
 			{
-				case up:
-					currentFrame = runningUpAnimation.getKeyFrame(elapsed_time, true);
-					break;
-				case down:
-					currentFrame = runningDownAnimation.getKeyFrame(elapsed_time, true);
-					break;
-				case left:
-					currentFrame = runningLeftAnimation.getKeyFrame(elapsed_time, true);
-					break;
-				case right:
-					currentFrame = runningRightAnimation.getKeyFrame(elapsed_time, true);
-					break;
+				switch (d)
+				{
+					case up:
+						currentFrame = runningUpAnimation.getKeyFrame(elapsed_time, true);
+						break;
+					case down:
+						currentFrame = runningDownAnimation.getKeyFrame(elapsed_time, true);
+						break;
+					case left:
+						currentFrame = runningLeftAnimation.getKeyFrame(elapsed_time, true);
+						break;
+					case right:
+						currentFrame = runningRightAnimation.getKeyFrame(elapsed_time, true);
+						break;
+				}
+			}
+			else
+			{
+				currentFrame = idleAnimation.getKeyFrame(elapsed_time, true);
+			}
+
+			ScreenUtils.clear(1, 0, 0, 1);
+			batch.begin();
+			batch.draw(tBackground, 0, 0);
+			batch.draw(currentFrame, posX, posY);
+			batch.end();
+			if ( posX == 0 && posY == 0 )
+			{
+				currentScreen = Screen.TITLE;
 			}
 		}
-		else
+		else if ( currentScreen == Screen.TITLE )
 		{
-			currentFrame = idleAnimation.getKeyFrame(elapsed_time, true);
+			batch.begin();
+			batch.draw(tBackground, 0, 0);
+			//batch.draw(currentFrame, posX, posY);
+			batch.end();
 		}
 
-		ScreenUtils.clear(1, 0, 0, 1);
-		batch.begin();
-		//img.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-		batch.draw(img, 0, 0);
-		batch.draw(currentFrame, posX, posY);
-		batch.end();
 	}
 	
 	@Override
 	public void dispose () {
 		batch.dispose();
-		img.dispose();
+		tBackground.dispose();
 	}
 
 	private void move()
@@ -145,5 +179,4 @@ public class MyGdxGame extends ApplicationAdapter {
 
         walking = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.D);
 	}
-
 }
