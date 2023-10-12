@@ -11,12 +11,16 @@ public class MyGdxGame extends ApplicationAdapter {
 	Texture tBackground;
 	private float posX, posY;
 	Texture tWalkingCharacter;
+	Texture tWarriorGoblin;
 	private static final float FRAME_TIME = 1/8f;
 	private Animation<TextureRegion> runningLeftAnimation;
 	private Animation<TextureRegion> runningRightAnimation;
 	private Animation<TextureRegion> runningUpAnimation;
 	private Animation<TextureRegion> runningDownAnimation;
 	private Animation<TextureRegion> idleAnimation;
+	private Animation<TextureRegion> attackWarriorGoblinAnimation;
+	private Animation<TextureRegion> dieWarriorGoblinAnimation;
+	private Animation<TextureRegion> idleWarriorGoblinAnimation;
 	private boolean walking = false;
 	private float elapsed_time;
 	public enum dir
@@ -36,12 +40,39 @@ public class MyGdxGame extends ApplicationAdapter {
 	private boolean golin_fight = false;
 	private boolean skeleton_fight = false;
 	private boolean minotaur_fight = false;
+	public GoblinWarriorAgent gobWarrior1 = new GoblinWarriorAgent();
+	public GoblinWarriorAgent gobWarrior2 = new GoblinWarriorAgent();
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		tBackground = new Texture("background.png");
 		tWalkingCharacter = new Texture("WalkingSprite.png");
+		tWarriorGoblin = new Texture("WarriorGoblinSprite.png");
+
+		TextureRegion[][] tmp = TextureRegion.split(tWarriorGoblin,
+				tWarriorGoblin.getWidth() / 10,
+				tWarriorGoblin.getHeight() / 2);
+
+		TextureRegion[] warriorGoblinAttack = new TextureRegion[10];
+		TextureRegion[] warriorGoblinDie = new TextureRegion[10];
+		TextureRegion[] warriorGoblinIdle = new TextureRegion[2];
+
+		int index = 0;
+		for (int j = 0; j < 10; j++) {
+			warriorGoblinAttack[index++] = tmp[0][j];
+		}
+		attackWarriorGoblinAnimation = new Animation<TextureRegion>(FRAME_TIME, warriorGoblinAttack);
+
+		index = 0;
+		for (int j = 0; j < 10; j++) {
+			warriorGoblinDie[index++] = tmp[1][j];
+		}
+		dieWarriorGoblinAnimation = new Animation<TextureRegion>(FRAME_TIME, warriorGoblinDie);
+
+		warriorGoblinIdle[0] = tmp[1][0];
+		warriorGoblinIdle[1] = tmp[1][1];
+		idleWarriorGoblinAnimation = new Animation<TextureRegion>(FRAME_TIME, warriorGoblinIdle);
 
 		Gdx.input.setInputProcessor(new InputAdapter() {
 			@Override
@@ -60,7 +91,6 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-
 		switch ( currentScreen )
 		{
 			case TITLE:
@@ -100,8 +130,46 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	public void goblin_fight_render()
 	{
+		elapsed_time += Gdx.graphics.getDeltaTime();
+		TextureRegion currentGoblinFrame_1;
+		TextureRegion currentGoblinFrame_2;
+		TextureRegion currentCharacterFrame;
+		float die_animation_time = 0;
+		boolean gobWarriorDiyinig = false;
+
 		batch.begin();
+		if ( gobWarrior1.HP <= 0 )
+		{
+			die_animation_time += Gdx.graphics.getDeltaTime();
+			currentGoblinFrame_1 = dieWarriorGoblinAnimation.getKeyFrame(die_animation_time, false);
+			if ( dieWarriorGoblinAnimation.isAnimationFinished(die_animation_time) )
+			{
+				gobWarrior1.HP = 100;
+			}
+		}
+		else
+		{
+			currentGoblinFrame_1 = idleWarriorGoblinAnimation.getKeyFrame(elapsed_time, true);
+		}
+
+		if ( gobWarrior2.HP <= 0 )
+		{
+			currentGoblinFrame_2 = dieWarriorGoblinAnimation.getKeyFrame(elapsed_time, true);
+		}
+		else
+		{
+			currentGoblinFrame_2 = idleWarriorGoblinAnimation.getKeyFrame(elapsed_time, true);
+		}
+
+		gobWarrior1.HP --;
+
+		currentCharacterFrame = idleAnimation.getKeyFrame(elapsed_time, true);
+
+		ScreenUtils.clear(1, 0, 0, 1);
 		batch.draw(tBackground, 0, 0);
+		batch.draw(currentGoblinFrame_1, 600, 300, 100, 100);
+		batch.draw(currentGoblinFrame_2, 600, 200, 100, 100);
+		batch.draw(currentCharacterFrame, posX, posY);
 		batch.end();
 	}
 	public void skeleton_fight_render()
